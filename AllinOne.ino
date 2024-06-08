@@ -17,9 +17,11 @@ char pass[] = "anaklanang";
 LiquidCrystal_I2C lcd(0x27, 16, 2); // Address LCD I2C dan ukuran (16x2)
 DFRobot_MAX30102 particleSensor;
 
-const int buttonPin0 = D5; // Pin trigger Tensi
+// const int buttonPin0 = D5; // Pin trigger Tensi
 const int buttonPin1 = D6;  // Pin push button Max
 const int buttonPin2 = D7;  // Pin push button Tensi
+const int triggerPin = D8; // Pin trigger Tensi
+const int resetPin = D5;
 bool buttonState = false; // Menyimpan status push button
 bool systemActive = false; // Menyimpan status sistem aktif/non-aktif
 bool buttonState1 = false; // Menyimpan status push button
@@ -27,6 +29,7 @@ bool systemActive1 = false; // Menyimpan status sistem aktif/non-aktif
 bool fingerDetected = false;
 bool systemMessageDisplayed = false;
 bool readingInProgress = false; // Menyimpan status pembacaan tensi
+bool initialDisplay = true; // Menyimpan status tampilan awal
 
 unsigned long lastDebounceTime = 0; // Waktu terakhir tombol ditekan
 unsigned long debounceDelay = 50; // Debounce time (ms)
@@ -43,12 +46,17 @@ int8_t SPO2Valid;
 int32_t heartRate;
 int8_t heartRateValid;
 
+int Cons = 0;
+int reset = 1;
+
 void setup()
 {
+
+  Serial.begin(115200);
   pinMode(buttonPin1, INPUT_PULLUP); // Konfigurasi pin button dengan pull-up
   pinMode(buttonPin2, INPUT_PULLUP); // Konfigurasi pin button dengan pull-up
-  pinMode(buttonPin0, OUTPUT); // Konfigurasi pin button dengan pull-up
-  Serial.begin(115200);
+  pinMode(resetPin, INPUT_PULLUP); // Konfigurasi pin button dengan pull-up
+  pinMode(triggerPin, OUTPUT); // Konfigurasi pin button dengan pull-up
 
   if (!particleSensor.begin())
   {
@@ -70,13 +78,24 @@ void setup()
 
 
 void loop(){
-  Max();
-  Tensi();
-  return;
-}
-void Max()
-{
+  int reset = digitalRead(resetPin);
+  
+  if (reset==LOW){
+    initialDisplay = true;
+    Cons = 0;
+  }
+
+  if (initialDisplay) {
+    lcd.setCursor(0, 0);
+    lcd.print("1: Max          ");
+    lcd.setCursor(0, 1);
+    lcd.print("2: Tensi        ");
+    initialDisplay = false;
+  }
+
+  
   int reading = digitalRead(buttonPin1);
+  Serial.println(reading);
   if (reading == LOW && (millis() - lastDebounceTime) > debounceDelay) {
     lastDebounceTime = millis();
     buttonState = !buttonState;
@@ -93,8 +112,60 @@ void Max()
       lcd.print("Sistem Mati     ");
     }
     delay(1000); // Delay untuk menampilkan status sistem
+    Cons = 1 ;
+
+  }
+  
+  int reading1 = digitalRead(buttonPin2);
+  if (reading1 == LOW && (millis() - lastDebounceTime) > debounceDelay) {
+    lastDebounceTime = millis();
+    buttonState1 = !buttonState1;
+    systemActive1 = !systemActive1;
+    systemMessageDisplayed = false; // Reset flag
+    readingInProgress = false; // Reset flag
+
+    clearLine(0); // Clear first line
+    clearLine(1); // Clear second line
+    if (systemActive1) {
+      digitalWrite(triggerPin, HIGH);
+      delay(200);
+      digitalWrite(triggerPin, LOW);
+      lcd.setCursor(0, 0);
+      lcd.print("Sistem Aktif    ");
+      Serial.println("Sistem Aktif");
+      Serial.print("Memproses....  ");
+      Serial.println("       ");
+    } else {
+      digitalWrite(triggerPin, HIGH);
+      delay(200);
+      digitalWrite(triggerPin, LOW);
+      lcd.setCursor(0, 0);
+      lcd.print("Sistem Mati     ");
+      Serial.println("Sistem Mati");
+      Serial.print("Tekan tombol untuk memulai.. ");
+      Serial.println("       ");
+      resetRXBuffer(); // Reset RX buffer and related variables
+    }
+    delay(1000); // Delay untuk menampilkan status sistem
+    Cons = 2;
   }
 
+  if (Cons==1){
+    Max();
+  }
+  else if (Cons==2){
+    Tensi();
+  }
+  else {
+    Cons=0;
+  }
+
+  Blynk.run();
+  return;
+}
+
+void Max()
+{
   if (systemActive) {
     long irValue = particleSensor.getIR();
     Serial.print("IR=");
@@ -157,40 +228,7 @@ void Max()
 
 void Tensi() {
   // Baca status push button dengan debouncing
-  int reading = digitalRead(buttonPin1);
-  if (reading == LOW && (millis() - lastDebounceTime) > debounceDelay) {
-    lastDebounceTime = millis();
-    buttonState1 = !buttonState1;
-    systemActive1 = !systemActive1;
-    systemMessageDisplayed = false; // Reset flag
-    readingInProgress = false; // Reset flag
-
-    clearLine(0); // Clear first line
-    clearLine(1); // Clear second line
     if (systemActive1) {
-      digitalWrite(triggerPin1, HIGH);
-      delay(100);
-      digitalWrite(triggerPin1, LOW);
-      lcd.setCursor(0, 0);
-      lcd.print("Sistem Aktif    ");
-      Serial.println("Sistem Aktif");
-      Serial.print("Memproses....  ");
-      Serial.println("       ");
-    } else {
-      digitalWrite(triggerPin1, HIGH);
-      delay(100);
-      digitalWrite(triggerPin1, LOW);
-      lcd.setCursor(0, 0);
-      lcd.print("Sistem Mati     ");
-      Serial.println("Sistem Mati");
-      Serial.print("Tekan tombol untuk memulai.. ");
-      Serial.println("       ");
-      resetRXBuffer(); // Reset RX buffer and related variables
-    }
-    delay(1000); // Delay untuk menampilkan status sistem
-  }
-
-  if (systemActive1) {
     if (!readingInProgress) {
       lcd.clear();
       lcd.setCursor(0, 0);
