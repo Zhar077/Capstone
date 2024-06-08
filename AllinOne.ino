@@ -168,12 +168,18 @@ void Tensi() {
     clearLine(0); // Clear first line
     clearLine(1); // Clear second line
     if (systemActive1) {
+      digitalWrite(triggerPin1, HIGH);
+      delay(100);
+      digitalWrite(triggerPin1, LOW);
       lcd.setCursor(0, 0);
       lcd.print("Sistem Aktif    ");
       Serial.println("Sistem Aktif");
       Serial.print("Memproses....  ");
       Serial.println("       ");
     } else {
+      digitalWrite(triggerPin1, HIGH);
+      delay(100);
+      digitalWrite(triggerPin1, LOW);
       lcd.setCursor(0, 0);
       lcd.print("Sistem Mati     ");
       Serial.println("Sistem Mati");
