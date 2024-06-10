@@ -78,7 +78,7 @@ void setup()
 
 
 void loop(){
-  int reset = digitalRead(resetPin);
+  int reset = digitalRead(resetPin); //resetPin Button D5
   
   if (reset==LOW){
     initialDisplay = true;
@@ -93,7 +93,7 @@ void loop(){
     initialDisplay = false;
   }
 
-  
+  //Kondisi Untuk Sistem MAX30102 (Detak Jantung/Button 1)
   int reading = digitalRead(buttonPin1);
   Serial.println(reading);
   if (reading == LOW && (millis() - lastDebounceTime) > debounceDelay) {
@@ -115,7 +115,8 @@ void loop(){
     Cons = 1 ;
 
   }
-  
+
+  //Kondisi Untuk Sistem Tensimeter (Tekanan Darah/Button 2)
   int reading1 = digitalRead(buttonPin2);
   if (reading1 == LOW && (millis() - lastDebounceTime) > debounceDelay) {
     lastDebounceTime = millis();
