@@ -78,24 +78,23 @@ void setup()
 
 
 void loop(){
-  int reset = digitalRead(resetPin); //resetPin Button D5
-  
-  if (reset==LOW){
-    initialDisplay = true;
-    Cons = 0;
+  // Cek status tombol reset
+  int resetReading = digitalRead(resetPin);
+  if (resetReading == LOW) {
+    resetSystem();
   }
 
   if (initialDisplay) {
     lcd.setCursor(0, 0);
-    lcd.print("1: Max          ");
+    lcd.print("Red : BPM          ");
     lcd.setCursor(0, 1);
-    lcd.print("2: Tensi        ");
+    lcd.print("Green : Tensi        ");
     initialDisplay = false;
   }
 
   //Kondisi Untuk Sistem MAX30102 (Detak Jantung/Button 1)
   int reading = digitalRead(buttonPin1);
-  Serial.println(reading);
+  // Serial.println(reading);
   if (reading == LOW && (millis() - lastDebounceTime) > debounceDelay) {
     lastDebounceTime = millis();
     buttonState = !buttonState;
@@ -105,9 +104,12 @@ void loop(){
     clearLine(0); // Clear first line
     clearLine(1); // Clear second line
     if (systemActive) {
+      Serial.print("Sistem Aktif");
       lcd.setCursor(0, 0);
       lcd.print("Sistem Aktif    ");
+    
     } else {
+      Serial.print("Sistem Mati");
       lcd.setCursor(0, 0);
       lcd.print("Sistem Mati     ");
     }
@@ -129,7 +131,7 @@ void loop(){
     clearLine(1); // Clear second line
     if (systemActive1) {
       digitalWrite(triggerPin, HIGH);
-      delay(200);
+      delay(300);
       digitalWrite(triggerPin, LOW);
       lcd.setCursor(0, 0);
       lcd.print("Sistem Aktif    ");
@@ -138,7 +140,7 @@ void loop(){
       Serial.println("       ");
     } else {
       digitalWrite(triggerPin, HIGH);
-      delay(200);
+      delay(300);
       digitalWrite(triggerPin, LOW);
       lcd.setCursor(0, 0);
       lcd.print("Sistem Mati     ");
@@ -172,33 +174,36 @@ void Max()
     Serial.print("IR=");
     Serial.print(irValue);
 
-    if (irValue < 45000) {
-      Serial.println("  No finger?");
+    if (irValue < 40000) {
+      Serial.print("  No finger?");
       fingerDetected = false;
 
       lcd.setCursor(0, 0);
-      lcd.print("No Finger       ");
+      lcd.print("Letakan Jari");
+      lcd.setCursor(0, 1);
+      lcd.print("Pada Sensor");
 
     } else {
       if (!fingerDetected) {
         fingerDetected = true;
-        clearLine(0);
-        clearLine(1);
-        lcd.print("                "); // Menghapus pesan "No Finger"
+        lcd.clear();
+        Serial.println("   Memproses....");
+        lcd.setCursor(0, 0);
+        lcd.print("Memproses...."); // Menghapus pesan "No Finger"
       }
       particleSensor.heartrateAndOxygenSaturation(&SPO2, &SPO2Valid, &heartRate, &heartRateValid);
 
       if (heartRate == -999) {
-        Serial.println("letakkan jari");
+        Serial.println("Tunggu....");
         lcd.setCursor(0, 0);
-        lcd.print("letakkan jari   ");
+        lcd.print("Tunggu....");
   
       
       } else {
-        Serial.print(F("heartRate="));
+        Serial.print(F("   heartRate="));
         Serial.print(heartRate, DEC);
-        Serial.print(F(", heartRateValid="));
-        Serial.println(heartRateValid, DEC);
+        // Serial.print(F(", heartRateValid="));
+        // Serial.println(heartRateValid, DEC);
 
   
         lcd.setCursor(0, 0);
@@ -320,6 +325,10 @@ void Tensi() {
       lcd.setCursor(0, 1);
       lcd.print(kategori);
 
+      //cetak ke blynk
+      Blynk.virtualWrite(V8, hexDias);
+      Blynk.virtualWrite(V10, hexSys);
+
       delay(500);
       readingInProgress = false; // Reset flag
     }
@@ -333,6 +342,32 @@ void Tensi() {
     }
   }
 }
+
+
+void resetSystem() {
+  // Reset semua variabel ke kondisi awal
+  buttonState = false;
+  systemActive = false;
+  buttonState1 = false;
+  systemActive1 = false;
+  fingerDetected = false;
+  systemMessageDisplayed = false;
+  readingInProgress = false;
+  initialDisplay = true;
+
+  lastDebounceTime = 0;
+  b_read = false;
+  b_discard = false;
+  i = 0;
+  j = 0;
+  memset(buff, 0, sizeof(buff));
+  memset(final_buff, 0, sizeof(final_buff));
+  Cons = 0;
+
+  // Tunggu beberapa detik sebelum kembali ke tampilan awal
+  delay(2000);
+}
+
 
 void resetRXBuffer() {
   b_read = false;
