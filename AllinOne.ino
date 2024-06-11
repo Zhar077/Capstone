@@ -368,7 +368,6 @@ void resetSystem() {
   delay(2000);
 }
 
-
 void resetRXBuffer() {
   b_read = false;
   b_discard = false;
