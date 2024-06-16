@@ -1,8 +1,8 @@
 #define BLYNK_PRINT Serial
 
-#define BLYNK_TEMPLATE_ID "TMPL6MrVrGpr4"
+#define BLYNK_TEMPLATE_ID "TMPL6hM96Fm03"
 #define BLYNK_TEMPLATE_NAME "Medical Check Up Detak Jantung dan Tekanan Darah"
-#define BLYNK_AUTH_TOKEN "M_PFcwIgjlBTG2LWbO8mdojUuH-tkoAa"
+#define BLYNK_AUTH_TOKEN "ie4g6bGpJxnBaDqf5k50hq8kKlqa1Dyh"
 
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -11,8 +11,8 @@
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
 
-char ssid[] = "LAN-ang";
-char pass[] = "anaklanang";
+char ssid[] = "Andromeda";
+char pass[] = "Andromeda123";
 
 LiquidCrystal_I2C lcd(0x27, 16, 2); // Address LCD I2C dan ukuran (16x2)
 DFRobot_MAX30102 particleSensor;
@@ -51,29 +51,82 @@ int reset = 1;
 
 void setup()
 {
-
   Serial.begin(115200);
   pinMode(buttonPin1, INPUT_PULLUP); // Konfigurasi pin button dengan pull-up
   pinMode(buttonPin2, INPUT_PULLUP); // Konfigurasi pin button dengan pull-up
   pinMode(resetPin, INPUT_PULLUP); // Konfigurasi pin button dengan pull-up
   pinMode(triggerPin, OUTPUT); // Konfigurasi pin button dengan pull-up
 
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
+
   if (!particleSensor.begin())
   {
     Serial.println("MAX30102 was not found");
+    lcd.setCursor(0, 0);
+    lcd.print("MAX30102 not found");
     while (1)
     {
       delay(1000);
     }
   }
+  else
+  {
+    Serial.println("MAX30102 is ready");
+    lcd.setCursor(0, 0);
+    lcd.print("MAX30102 ready");
+    lcd.setCursor(0, 1);
+    lcd.print("Tensi is Ready");
+    delay(3000);
+  }
 
   particleSensor.sensorConfiguration(50, SAMPLEAVG_4, MODE_MULTILED, SAMPLERATE_100, PULSEWIDTH_411, ADCRANGE_16384);
 
-  lcd.init();
-  lcd.backlight();
-  lcd.clear();
-
   Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+
+  // Check if WiFi is connected
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    Serial.println("WiFi connected");
+    lcd.clear();
+    lcd.setCursor(0, 0); // Assure this does not overwrite "Blynk connected"
+    lcd.print("WiFi connected");
+  }
+  else
+  {
+    Serial.println("WiFi not connected");
+    lcd.clear();
+    lcd.setCursor(0, 0); // Assure this does not overwrite "Blynk not connected"
+    lcd.print("WiFi not connected");
+  }
+
+  delay(3000);
+
+
+  if (Blynk.connected())
+  {
+    Serial.println("Blynk connected");
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Blynk connected");
+  }
+  else
+  {
+    Serial.println("Blynk not connected");
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Blynk not connected");
+  }
+  
+  delay(3000);
+
+
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Machine is Ready");
+  delay(5000);
+
 }
 
 
@@ -86,9 +139,9 @@ void loop(){
 
   if (initialDisplay) {
     lcd.setCursor(0, 0);
-    lcd.print("Red : BPM          ");
+    lcd.print("Yellow : BPM          ");
     lcd.setCursor(0, 1);
-    lcd.print("Green : Tensi        ");
+    lcd.print("Blue : Tensi        ");
     initialDisplay = false;
   }
 
@@ -211,7 +264,7 @@ void Max()
         lcd.print(heartRate);
         lcd.print(" bpm        ");
 
-        Blynk.virtualWrite(V7, heartRate);
+        Blynk.virtualWrite(V1, heartRate);
 
       }
     }
@@ -326,8 +379,8 @@ void Tensi() {
       lcd.print(kategori);
 
       //cetak ke blynk
-      Blynk.virtualWrite(V8, hexDias);
-      Blynk.virtualWrite(V10, hexSys);
+      Blynk.virtualWrite(V2, hexDias);
+      Blynk.virtualWrite(V3, hexSys);
 
       delay(500);
       readingInProgress = false; // Reset flag
@@ -342,7 +395,6 @@ void Tensi() {
     }
   }
 }
-
 
 void resetSystem() {
   // Reset semua variabel ke kondisi awal
@@ -365,8 +417,9 @@ void resetSystem() {
   Cons = 0;
 
   // Tunggu beberapa detik sebelum kembali ke tampilan awal
-  delay(2000);
+  delay(500);
 }
+
 
 void resetRXBuffer() {
   b_read = false;
