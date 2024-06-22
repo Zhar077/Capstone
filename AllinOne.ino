@@ -11,8 +11,8 @@
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
 
-char ssid[] = "Andromeda";
-char pass[] = "Andromeda123";
+char ssid[] = "Alpha";
+char pass[] = "qwertyuio";
 
 LiquidCrystal_I2C lcd(0x27, 16, 2); // Address LCD I2C dan ukuran (16x2)
 DFRobot_MAX30102 particleSensor;
@@ -22,6 +22,8 @@ const int buttonPin1 = D6;  // Pin push button Max
 const int buttonPin2 = D7;  // Pin push button Tensi
 const int triggerPin = D8; // Pin trigger Tensi
 const int resetPin = D5;
+int readingBlynk = 1;
+int readingBlynk1 = 1;
 bool buttonState = false; // Menyimpan status push button
 bool systemActive = false; // Menyimpan status sistem aktif/non-aktif
 bool buttonState1 = false; // Menyimpan status push button
@@ -48,6 +50,28 @@ int8_t heartRateValid;
 
 int Cons = 0;
 int reset = 1;
+
+BLYNK_WRITE(V4){
+  if (param.asInt() == HIGH) {
+    readingBlynk = LOW;
+    Serial.println("BPM bynk on interupt");
+  }
+  // else{
+  //   readingBlynk = HIGH;
+  //   Serial.println("BPM bynk off");
+  // }
+}
+
+BLYNK_WRITE(V5){
+  if (param.asInt() == HIGH) {
+    readingBlynk1 = LOW;
+    Serial.println("Tensi bynk interupt");
+  }
+  // else{
+  //   readingBlynk1 = HIGH;
+  //   Serial.println("Tensi bynk off");
+  // }
+}
 
 void setup()
 {
@@ -131,7 +155,7 @@ void setup()
 
 
 void loop(){
-  // Cek status tombol reset
+    // Cek status tombol reset
   int resetReading = digitalRead(resetPin);
   if (resetReading == LOW) {
     resetSystem();
@@ -144,15 +168,14 @@ void loop(){
     lcd.print("Blue : Tensi        ");
     initialDisplay = false;
   }
-
-  //Kondisi Untuk Sistem MAX30102 (Detak Jantung/Button 1)
   int reading = digitalRead(buttonPin1);
-  // Serial.println(reading);
-  if (reading == LOW && (millis() - lastDebounceTime) > debounceDelay) {
+  //Kondisi Untuk Sistem MAX30102 (Detak Jantung/Button 1)
+  if ((reading == LOW || readingBlynk == LOW) && (millis() - lastDebounceTime) > debounceDelay) {
     lastDebounceTime = millis();
     buttonState = !buttonState;
     systemActive = !systemActive;
     systemMessageDisplayed = false; // Reset flag
+    readingBlynk = HIGH;
 
     clearLine(0); // Clear first line
     clearLine(1); // Clear second line
@@ -173,12 +196,13 @@ void loop(){
 
   //Kondisi Untuk Sistem Tensimeter (Tekanan Darah/Button 2)
   int reading1 = digitalRead(buttonPin2);
-  if (reading1 == LOW && (millis() - lastDebounceTime) > debounceDelay) {
+  if ((reading1 == LOW || readingBlynk1 == LOW) && (millis() - lastDebounceTime) > debounceDelay) {
     lastDebounceTime = millis();
     buttonState1 = !buttonState1;
     systemActive1 = !systemActive1;
     systemMessageDisplayed = false; // Reset flag
     readingInProgress = false; // Reset flag
+    readingBlynk1 = HIGH;
 
     clearLine(0); // Clear first line
     clearLine(1); // Clear second line
