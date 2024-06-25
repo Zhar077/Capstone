@@ -127,7 +127,6 @@ void setup()
 
   delay(3000);
 
-
   if (Blynk.connected())
   {
     Serial.println("Blynk connected");
@@ -168,6 +167,7 @@ void loop(){
     lcd.print("Blue : Tensi        ");
     initialDisplay = false;
   }
+  
   int reading = digitalRead(buttonPin1);
   //Kondisi Untuk Sistem MAX30102 (Detak Jantung/Button 1)
   if ((reading == LOW || readingBlynk == LOW) && (millis() - lastDebounceTime) > debounceDelay) {
@@ -443,7 +443,6 @@ void resetSystem() {
   // Tunggu beberapa detik sebelum kembali ke tampilan awal
   delay(500);
 }
-
 
 void resetRXBuffer() {
   b_read = false;
